@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Faa GameCore</string>
+    <string name="shizuku_app">moe.shizuku.privileged.api</string>
+    <string name="channel_daemon">Faa GameCore Daemon</string>
+    <string name="channel_alerts">Faa GameCore Alerts</string>
+</resources>

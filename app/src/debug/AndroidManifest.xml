@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug only. BOOT_COMPLETED is a protected broadcast, so adb cannot deliver it
+     (Android 12+). Exports the receiver and accepts a test action that runs the
+     same bootRecovery path; release keeps the receiver unexported and boot-only. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <receiver
+            android:name=".core.BootReceiver"
+            android:exported="true"
+            tools:replace="android:exported">
+            <intent-filter>
+                <action android:name="com.faa.fgamecore.action.DEBUG_BOOT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

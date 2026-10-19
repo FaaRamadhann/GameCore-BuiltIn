@@ -1,0 +1,24 @@
+# Gradle / build
+.gradle/
+.kotlin/
+build/
+app/build/
+build-log.txt
+local.properties
+
+# Signing material — never commit
+keystore/
+*.jks
+*.keystore
+keystore.properties
+
+# Original upstream project (reference only, not part of this build)
+src-reference/
+
+# IDE
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
