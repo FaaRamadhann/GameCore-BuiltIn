@@ -87,8 +87,11 @@ Aturan yang dipertahankan dari sumber asli:
 ## Persyaratan
 
 - Android 8.0+ (API 26), targetSdk 34.
-- **Shizuku** aktif ([Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api))
-  via ADB / wireless debugging.
+- **Shizuku Next** aktif — versi yang direkomendasikan
+  ([rilis terbaru](https://github.com/rushiranpise/Shizuku-Next/releases/latest),
+  paket `shizuku-v14.0.27-next.apk`). Diuji pada `14.0.26-next`.
+  Shizuku resmi (13.x) juga jalan, tapi Next lebih andal untuk start via
+  wireless debugging di Android 12+.
 - Tidak butuh root, Magisk, atau LSPosed.
 
 ## Instalasi
@@ -98,7 +101,7 @@ Aturan yang dipertahankan dari sumber asli:
    ```bash
    adb install -r app-release.apk
    ```
-2. Jalankan **Shizuku** lebih dulu (mode ADB / wireless debugging).
+2. Jalankan **Shizuku Next** lebih dulu (mode wireless debugging / ADB).
 3. Buka **Faa GameCore** → Welcome → **Buka Shizuku** → izinkan Faa GameCore.
 4. Kembali ke aplikasi → **Lanjutkan** → **Start Daemon**.
 5. Tambah game di **Game List**, pilih profil, lalu tekan **PLAY**.

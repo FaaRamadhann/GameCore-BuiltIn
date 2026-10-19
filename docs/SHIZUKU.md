@@ -6,8 +6,16 @@ those commands as the `shell` uid (2000) — the same uid `adb shell` uses.
 
 ## 1. Install Shizuku
 
-Play Store: <https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api>
-(or the APK from <https://shizuku.rikka.app/download/>).
+**Recommended: Shizuku Next** — versi 14.x dengan perbaikan start via wireless
+debugging dan reliabilitas yang lebih baik di Android 12+:
+
+- Rilis: <https://github.com/rushiranpise/Shizuku-Next/releases/latest>
+- APK: `shizuku-v14.0.27-next.apk` (versi yang diuji di proyek ini: `14.0.26-next`)
+
+Alternatif: Shizuku resmi dari
+<https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api>
+(atau <https://shizuku.rikka.app/download/>). Faa GameCore tetap kompatibel,
+tapi start-on-boot dan wireless debugging di Android 12+ lebih stabil di Next.
 
 ## 2. Start Shizuku
 
