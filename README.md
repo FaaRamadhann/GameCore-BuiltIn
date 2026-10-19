@@ -1,28 +1,78 @@
-# Faa GameCore
+# Faa GameCore — Built-In
+
+[![Release](https://img.shields.io/github/v/release/FaaRamadhann/GameCore-BuiltIn?label=release&color=2ea043)](https://github.com/FaaRamadhann/GameCore-BuiltIn/releases/latest)
+[![License: GPL-3.0](https://img.shields.io/github/license/FaaRamadhann/GameCore-BuiltIn?color=2ea043)](LICENSE)
+[![Platform](https://img.shields.io/badge/Android-8.0%2B%20(API%2026)-3ddc84?logo=android&logoColor=white)](#persyaratan)
+[![Non-root](https://img.shields.io/badge/root-not%20required-1f6feb)](#persyaratan)
 
 Aplikasi Android native **non-root** untuk mengatur aplikasi latar belakang saat bermain game.
-Diturunkan dari logika inti [Faa GameCore](https://github.com/FaaRamadhann/Faa-GameCore) (modul Magisk),
-dijalankan ulang sebagai aplikasi mandiri di atas **Shizuku**.
+Logika inti [Faa GameCore](https://github.com/FaaRamadhann/Faa-GameCore) (modul Magisk) dijalankan
+ulang sebagai aplikasi mandiri di atas **Shizuku** — tanpa root, tanpa Magisk, tanpa `su`.
 
-- Nama: `Faa GameCore` (Standalone)
-- Package: `com.faa.fgamecore`
-- Versi: 1.3.1 (versionCode 131)
-- minSdk 26 / targetSdk 34
-- Tanpa root, tanpa Magisk, tanpa `su`
+> **Unduh:** [app-release.apk (v1.3.1)](https://github.com/FaaRamadhann/GameCore-BuiltIn/releases/latest/download/app-release.apk)
 
-## Arsitektur
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" width="24%" alt="Dashboard" />
+  <img src="docs/screenshots/games.png" width="24%" alt="Game List" />
+  <img src="docs/screenshots/autodetect.png" width="24%" alt="Auto Detect" />
+  <img src="docs/screenshots/overlay.png" width="24%" alt="Floating Overlay" />
+</p>
+
+---
+
+## Daftar isi
+
+- [Kenapa Built-In](#kenapa-built-in)
+- [Fitur](#fitur)
+- [Cara kerja](#cara-kerja)
+- [Persyaratan](#persyaratan)
+- [Instalasi](#instalasi)
+- [Build dari source](#build-dari-source)
+- [Pengujian](#pengujian)
+- [Batasan](#batasan)
+- [Struktur proyek](#struktur-proyek)
+- [Lisensi](#lisensi)
+
+## Kenapa Built-In
+
+Versi modul Magisk menempel ke sistem lewat Zygisk/`/data/adb`. Versi ini mengambil jalur yang
+lebih sederhana: seluruh keputusan ada di aplikasi, dan perintah istimewa (`pm disable-user`,
+`pm enable`, `am force-stop`, `dumpsys`) dijalankan sebagai **uid shell** lewat Shizuku.
+
+Hasilnya: satu APK, bisa di-uninstall biasa, dan state paket tetap reversibel.
+
+## Fitur
+
+| Fitur | Keterangan |
+|---|---|
+| **Game List** | Tambah manual (validasi paket harus terpasang) atau pilih dari aplikasi terpasang |
+| **Auto Detect** | Daftar seluruh aplikasi + pencarian + badge `SYS` untuk aplikasi sistem |
+| **Profil 1 Balance** | Hanya `am force-stop` pada target |
+| **Profil 2 Performance** | Force-stop lebih agresif |
+| **Profil 3 Awaken** | Force-stop + `pm disable-user` (freeze sungguhan) |
+| **Profil 4 Auto** | Dipilih otomatis dari level baterai |
+| **Blacklist / Whitelist** | Whitelist menang; paket sistem selalu dilindungi |
+| **Jurnal write-ahead** | Ditulis **sebelum** perintah disable, jadi tidak ada paket "hilang" |
+| **Verifikasi jujur** | Snapshot `pm list packages -d/-e`; gagal → entry disimpan untuk retry |
+| **Recovery** | Process death, daemon mati, sesi basi, dan boot |
+| **Daemon** | Foreground service + notifikasi, poll interval |
+| **Floating Overlay** | Panel + bubble, bisa digeser, start minimized, ganti profil dari panel |
+| **Dry run** | Simulasi sesi penuh tanpa mengubah satu paket pun |
+| **Runtime log** | Ring buffer + `fgc-runtime.log` |
+
+## Cara kerja
 
 ```
-UI (Jetpack Compose, dark "Night Blue Sky")
+UI (Jetpack Compose, tema "Night Blue Sky")
   └── Fgc (state flow + engine, satu pintu)
-        ├── Policy      ← port policy_engine.sh + process_manager.sh + session_controller.sh
-        ├── ShizukuBridge → IShizukuService.newProcess("sh -c …")  (uid shell)
-        ├── Store       → SharedPreferences (games, black/whitelist, frozen journal)
-        ├── Logs        → ring buffer + file (fgc-runtime.log)
-        └── FgcService  → foreground service, poll tiap N detik (dumpsys foreground)
+        ├── Policy       ← port policy_engine.sh + process_manager.sh + session_controller.sh
+        ├── ShizukuBridge → IShizukuService.newProcess("sh -c …")   (uid shell)
+        ├── Store        → SharedPreferences (games, black/whitelist, jurnal frozen)
+        ├── Logs         → ring buffer + file (fgc-runtime.log)
+        └── FgcService   → foreground service, poll foreground app (dumpsys)
 ```
 
-Keputusan penting yang dipertahankan dari sumber asli:
+Aturan yang dipertahankan dari sumber asli:
 
 | Aturan | Implementasi |
 |---|---|
@@ -34,52 +84,89 @@ Keputusan penting yang dipertahankan dari sumber asli:
 | game foreground tidak dibekukan | target difilter terhadap paket game |
 | dry-run | `Policy.freeze()` melewati perintah, hanya log |
 
-## Ikon
+## Persyaratan
 
-Artwork sumber `роза_Rozaletta____деревня друзей фиксая.jpg` (736×736) diproses oleh
-`python tools/make_icon.py` menjadi:
+- Android 8.0+ (API 26), targetSdk 34.
+- **Shizuku** aktif ([Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api))
+  via ADB / wireless debugging.
+- Tidak butuh root, Magisk, atau LSPosed.
 
-| Resource | Ukuran | Peran |
-|---|---|---|
-| `mipmap-*/ic_launcher_foreground.png` | 108/162/216/324/432 | foreground adaptive (full-bleed 108dp) |
-| `mipmap-*/ic_launcher.png` | 48/72/96/144/192 | legacy launcher icon |
-| `mipmap-*/ic_launcher_round.png` | 48/72/96/144/192 | legacy round icon (alpha circle) |
-| `mipmap-anydpi-v26/ic_launcher{,_round}.xml` | — | adaptive icon (API 26+) |
+## Instalasi
 
-Foreground memakai crop yang membuat wajah tetap berada di area aman 72dp, jadi
-mask lingkaran/squircle tidak memotong bagian penting.
+1. Unduh [app-release.apk](https://github.com/FaaRamadhann/GameCore-BuiltIn/releases/latest/download/app-release.apk)
+   dan buka di perangkat (izinkan "Install unknown apps" bila diminta), atau:
+   ```bash
+   adb install -r app-release.apk
+   ```
+2. Jalankan **Shizuku** lebih dulu (mode ADB / wireless debugging).
+3. Buka **Faa GameCore** → Welcome → **Buka Shizuku** → izinkan Faa GameCore.
+4. Kembali ke aplikasi → **Lanjutkan** → **Start Daemon**.
+5. Tambah game di **Game List**, pilih profil, lalu tekan **PLAY**.
 
-Verifikasi: `python tools/check_icons.py app\build\outputs\apk\debug\app-debug.apk`
-(resource + isi APK). Bukti device: `build/icon-on-device.png`.
-
-## Build
+## Build dari source
 
 Butuh JDK 17+ dan Android SDK (platform 34, build-tools 34+).
 
-```bat
-set ANDROID_HOME=C:\AndroidSDK
-gradlew.bat :app:assembleDebug
+```bash
+./gradlew :app:assembleDebug          # tanpa keystore
 ```
 
-APK: `app\build\outputs\apk\debug\app-debug.apk`
+APK: `app/build/outputs/apk/debug/app-debug.apk`
 
-## Instal & setup Shizuku
+Untuk build release, siapkan `keystore/keystore.properties` + file JKS (tidak ikut repo):
 
-1. Install Shizuku dari Play Store.
-2. Jalankan Shizuku (mode ADB / wireless debugging).
-3. `adb install -r app\build\outputs\apk\debug\app-debug.apk`
-4. Buka Faa GameCore → Welcome → **Buka Shizuku** → izinkan Faa GameCore.
-5. Kembali ke Faa GameCore → **Lanjutkan** → **Start Daemon**.
+```properties
+storeFile=keystore/fgc-release.jks
+storePassword=…
+keyAlias=…
+keyPassword=…
+```
 
-## Fitur
+```bash
+./gradlew :app:assembleRelease
+```
 
-Berfungsi: Game List (manual + auto-detect aplikasi terpasang), profil 1/2/3/4 (Auto dari baterai),
-blacklist/whitelist, freeze/unfreeze dengan jurnal + verifikasi, daemon foreground, deteksi game
-via `dumpsys activity`, runtime log, notifikasi, boot auto-start, recovery saat proses mati.
+Detail toolchain, signing, dan daftar skrip uji ada di [`docs/BUILD.md`](docs/BUILD.md).
 
-Tidak didukung (batasan non-root/Shizuku): hook Zygisk/LSPosed, kill proses level kernel,
-`setenforce`, akses `/data/adb`.
+## Pengujian
+
+Semua uji device dijalankan di **Redmi 6A, Android 12 (SDK 32)** dan berakhir `exit 0`:
+
+| Uji | Bukti |
+|---|---|
+| Smoke test (semua layar, crash scan) | `build/smoke-last.log` |
+| Freeze / unfreeze / process death / recovery | `build/freeze-test-last.log` |
+| Boot recovery | `build/boot-test-last.log` |
+| Floating overlay di atas aplikasi lain | `build/overlay-test-last.log` |
+| Dry run tidak menyentuh paket | `build/dryrun-test-last.log` |
+| Auto-detect + pencarian | `build/autodetect-test-last.log` |
+| APK release: install, onboarding, cold start | `build/release-check-last.log` |
+| Self-test host (policy, launcher, recovery, ikon) | `tools/check_*.py` |
+
+Laporan lengkap: [`docs/TEST-REPORT.md`](docs/TEST-REPORT.md) · status per fitur:
+[`docs/FEATURES.md`](docs/FEATURES.md) · catatan kerja: [`PROGRESS.md`](PROGRESS.md).
+
+## Batasan
+
+- **Overlay tidak bisa tampil di atas Setelan.** Android 12 memasang
+  `mForceHideNonSystemOverlayWindow=true` untuk aplikasi yang meminta `HIDE_OVERLAY_WINDOWS`
+  (anti-tapjacking). Perilaku platform, bukan bug aplikasi.
+- Reboot fisik tidak diuji di perangkat uji (tidak mencapai `sys.boot_completed=1`); jalur boot
+  diverifikasi lewat action debug di build debug dengan kode produksi yang sama.
+- Non-root berarti ada batas keras: hook Zygisk/LSPosed, kill level kernel, `setenforce`,
+  dan akses `/data/adb` tidak tersedia.
+
+## Struktur proyek
+
+```
+app/src/main/java/com/faa/fgamecore/
+  core/        Fgc, Policy, Store, Logs, Launcher, Recovery, OverlayService, FgcService, BootReceiver
+  ui/          Compose: Dashboard, Games, Settings, Onboarding
+docs/          BUILD, FEATURES, TEST-REPORT, SHIZUKU, screenshots
+tools/         self-check host + harness ADB (freeze, boot, overlay, dry-run, auto-detect, release)
+```
 
 ## Lisensi
 
-GPL-3.0-or-later, mengikuti proyek sumber.
+GNU General Public License v3.0 or later — lihat [`LICENSE`](LICENSE).
+Mengikuti proyek sumber [Faa GameCore](https://github.com/FaaRamadhann/Faa-GameCore).
